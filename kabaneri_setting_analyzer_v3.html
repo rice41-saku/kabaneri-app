@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#142a38">
+<title>カバネリ設定判別 v2</title>
+<style>
+:root{color-scheme:dark;--bg:#0c1720;--panel:#172a37;--panel2:#203b4b;--ink:#f4f7f8;--muted:#aabdc7;--line:#35505e;--mint:#67dfb7;--gold:#ffd36b;--red:#ff7777}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;padding-bottom:94px}
+header{padding:20px 17px 16px;background:linear-gradient(135deg,#14364a,#253e4a);position:sticky;top:0;z-index:5}
+.kicker{font-size:10px;letter-spacing:.16em;color:#b8d0da}h1{font-size:22px;margin:5px 0}.subtitle{color:#c4d3da;font-size:12px}
+nav{display:flex;gap:7px;padding:10px 12px;overflow:auto;background:#101e28;position:sticky;top:84px;z-index:5;border-bottom:1px solid var(--line)}
+nav button{white-space:nowrap;border:1px solid var(--line);background:var(--panel);color:var(--muted);padding:9px 12px;border-radius:20px;font-size:13px}
+nav button.active{background:var(--mint);color:#10241e;border-color:var(--mint);font-weight:800}
+main{padding:13px;max-width:760px;margin:auto}.screen{display:none}.screen.active{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:13px}
+h2{font-size:16px;margin:0 0 10px}.hint{font-size:12px;color:var(--muted);line-height:1.6}.note{font-size:11px;color:var(--muted);line-height:1.65}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.row+.row{margin-top:10px}
+input[type=number],input[type=text]{background:#0c1a23;color:white;border:1px solid #4a6674;border-radius:10px;padding:11px;font-size:16px;min-width:0}
+input[type=number]{width:116px;text-align:right}input[type=text]{width:100%}
+.field{padding:10px 0;border-top:1px solid var(--line)}.field:first-of-type{border-top:0}.field label{font-weight:650}.field small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.counter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.counter{min-height:100px;border:1px solid #456170;background:#10212c;border-radius:13px;padding:12px;text-align:left;color:var(--ink);width:100%;display:flex;flex-direction:column;justify-content:space-between;touch-action:manipulation}
+.counter:active,.key:active,.rank:active{transform:scale(.98);filter:brightness(1.2)}
+.counter .name{font-size:12px;color:var(--muted)}.counter .val{font-size:31px;font-weight:800;line-height:1.1}.counter .tap{font-size:10px;color:#86d9bf}
+.mode{width:100%;border:1px solid var(--mint);border-radius:12px;padding:12px;background:#112e2a;color:var(--mint);font-weight:800;font-size:14px}
+.mode.minus{border-color:var(--gold);background:#352b15;color:var(--gold)}
+.primary{width:100%;border:0;border-radius:12px;background:var(--mint);color:#0c241d;font-weight:850;padding:14px;font-size:16px}
+.secondary{border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:white;padding:10px 12px}
+.danger{border-color:#7a4848;color:#ffaaaa;background:#3b2027}
+.keypad{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.key{aspect-ratio:1/1;border:1px solid #496575;border-radius:11px;background:#10212c;color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:4px;min-width:0}
+.key strong{font-size:19px}.key span{font-size:11px;color:var(--mint)}
+.key.special{background:#283342;border-color:#9c7951}.key.seven{border-color:var(--gold);background:#38301b}
+.st-card{background:#10212c;border:1px solid #496575;border-radius:13px;padding:12px;margin-top:10px}
+.st-title{font-weight:800;color:var(--mint)}.rank-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
+.rank{aspect-ratio:1/1;border:1px solid #506b78;border-radius:9px;background:#213846;color:white;font-weight:800;font-size:16px}
+.rank.selected{background:var(--mint);border-color:var(--mint);color:#10241e}
+.rank.unknown{font-size:12px}.event-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:7px}
+.event{border:1px solid #526d7a;border-radius:9px;background:#203746;color:white;padding:11px 4px;font-weight:700;min-height:58px}
+.event b{display:block;font-size:18px;color:var(--mint)}.event small{display:block;font-size:10px;color:var(--muted);margin-top:3px}
+.mima-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:7px}
+.result{padding:11px 0;border-top:1px solid var(--line)}.result:first-child{border-top:0}
+.bar{height:9px;background:#0b151c;border-radius:9px;overflow:hidden;margin-top:7px}.bar i{display:block;height:100%;background:var(--mint);border-radius:9px}
+.statgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat{background:#10212c;border-radius:11px;padding:11px}.stat span{display:block;color:var(--muted);font-size:11px}.stat b{display:block;font-size:21px;margin-top:3px}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{border-bottom:1px solid var(--line);padding:8px 5px;text-align:right}th:first-child,td:first-child{text-align:left}th{color:var(--muted)}
+.badge{display:inline-block;border:1px solid #5a7887;border-radius:20px;padding:3px 7px;font-size:10px;color:#d3e1e7}
+footer{position:fixed;bottom:0;left:0;right:0;padding:9px 12px calc(9px + env(safe-area-inset-bottom));background:#101e28;border-top:1px solid var(--line);display:flex;gap:8px;z-index:8}
+footer button{flex:1;max-width:360px}
+@media(min-width:560px){.counter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.keypad{grid-template-columns:repeat(7,minmax(0,1fr))}.rank-grid{grid-template-columns:repeat(7,minmax(0,1fr))}.mima-grid{grid-template-columns:repeat(7,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header><div class="kicker">SLOT DATA / FIRST MODEL v2</div><h1>甲鉄城のカバネリ</h1><div class="subtitle">初代・6.5号機｜実戦データ＆設定推測</div></header>
+<nav>
+<button class="active" data-tab="input">データ入力</button>
+<button data-tab="rank">ST・BBランク</button>
+<button data-tab="result">設定推測</button>
+<button data-tab="history">実戦履歴</button>
+<button data-tab="reference">判別資料</button>
+</nav>
+<main>
+<section id="input" class="screen active">
+<div class="card">
+<h2>実戦情報</h2>
+<div class="row"><label for="date">日付</label><input id="date" type="text" placeholder="例：2026/11/16" style="max-width:190px"></div>
+<div class="row" style="margin-top:9px"><label for="machineNo">台番号</label><input id="machineNo" type="text" placeholder="任意" style="max-width:190px"></div>
+<div class="field" style="margin-top:10px"><label for="games">通常時ゲーム数</label><small>ゲーム数だけ数字を直接入力</small><input id="games" type="number" min="0" inputmode="numeric" value="0"></div>
+</div>
+<div class="card">
+<h2>タッチで回数入力</h2>
+<button id="modeBtn" class="mode" onclick="toggleMode()">現在：＋1ずつ増やす</button>
+<p class="hint">初当たり・CZの項目に加えて、「カバネリボーナス中」のキャラ紹介・エピソード紹介も同じ増減モードで記録できるよ。減らしたいときは「−1ずつ減らす」に切り替えてね。</p>
+<div class="counter-grid">
+<button class="counter" onclick="changeCounter('bonus',1)"><span class="name">ボーナス初当り</span><strong class="val" id="v-bonus">0</strong><span class="tap">タッチして入力</span></button>
+<button class="counter" onclick="changeCounter('cz',1)"><span class="name">CZ突入回数</span><strong class="val" id="v-cz">0</strong><span class="tap">タッチして入力</span></button>
+<button class="counter" onclick="changeCounter('bell',1)"><span class="name">共通6枚ベル</span><strong class="val" id="v-bell">0</strong><span class="tap">タッチして入力</span></button>
+</div>
+</div>
+<div class="card">
+<h2>カバネリボーナス中</h2>
+<p class="hint">キャラ紹介・エピソード紹介をこの欄にまとめて記録するよ。上の「＋／－」切り替えは、下のキャラ紹介とエピソード紹介の両方に反映されるよ。</p>
+<div class="field">
+<strong>キャラ紹介</strong>
+<div class="counter-grid" style="margin-top:8px">
+<button class="counter" onclick="changeCounter('male')"><span class="name">男性キャラ紹介</span><strong class="val" id="v-male">0</strong><span class="tap">タッチして入力</span></button>
+<button class="counter" onclick="changeCounter('female')"><span class="name">女性キャラ紹介</span><strong class="val" id="v-female">0</strong><span class="tap">タッチして入力</span></button>
+</div>
+<p class="note">※駿城ボーナス成功後の無名固定紹介は数えないでね。</p>
+</div>
+<div class="field">
+<strong>エピソード紹介</strong>
+<p class="hint">紹介された話数をタッチして記録。6話以下はまとめて入力。第7話は設定4以上濃厚として判別に反映するよ。</p>
+<div class="keypad" id="episodeKeys"></div>
+<p class="note">8〜12話は「話数が大きいほど高設定期待度アップ」という定性的な示唆。話数ごとの設定別選択率が確認できないため、推定確率へ架空の数値を混ぜず、話数傾向として別表示するよ。</p>
+</div>
+</div>
+<div class="card">
+<h2>補足データ</h2>
+<div class="row"><label for="coins">差枚数</label><input id="coins" type="number" value="0" inputmode="numeric"></div>
+<div class="field"><label for="trophy">サミートロフィー（見た中で最上位）</label><select id="trophy"><option value="0">未確認・なし</option><option value="2">銅（設定2以上）</option><option value="3">銀（設定3以上）</option><option value="4">金（設定4以上）</option><option value="5">キリン柄（設定5以上）</option><option value="6">虹（設定6）</option></select></div>
+</div>
+<button class="primary" onclick="calculate();showTab('result')">設定を推測する</button>
+</section>
+
+<section id="rank" class="screen">
+<div class="card">
+<h2>100Gキリ番演出・サブ液晶キャラ</h2>
+<p class="hint">通常時の100Gごとのキリ番演出で確認したキャラクターを、その都度記録するよ。駿城ボーナス終了画面とは別の記録欄だよ。</p>
+<button class="primary" onclick="addKeyScreen()">＋ キリ番演出を追加</button>
+<div id="keyScreenList"></div>
+<p class="note">キャラクターはBBランクの示唆として扱い、内部ランクやCZ失敗時の昇格結果を直接確認したものとは扱わないよ。</p>
+</div>
+<div class="card">
+<h2>STごとのBBランク記録</h2>
+<p class="hint">ST当選ごとに記録欄を分けてあるよ。STに当選するたび「＋ ST当選を追加」を押して、その区間で確認・推測できたBBランクを選択してね。</p>
+<button class="primary" onclick="addST()">＋ ST当選を追加</button>
+<div id="stList"></div>
+<p class="note">各STのランク欄は「不明・ランク1〜6」の7ボタン。ランク6がMAX。BBランクが高いほどエピソードボーナス期待度が上がり、ランク6はエピソードボーナス確定。BBランクの記録自体は保存・集計するが、設定別の初期ランク振り分けは設定1の公表値しか確認できないため、現段階では設定確率に直接加点しないよ。</p>
+</div>
+<div class="card">
+<h2>CZ失敗履歴（実際に確認できる情報）</h2>
+<p class="hint">CZに失敗した種類と回数を記録する欄だよ。内部で何ランク昇格したかは通常画面から直接確認できないため、「非当選・1UP・3UP」の結果入力は行わないよ。</p>
+<div class="row"><span>無名CZ失敗</span><b id="sum-fnama">0回</b></div>
+<div class="row"><span>生駒CZ失敗</span><b id="sum-fikoma">0回</b></div>
+<div class="row"><span>美馬CZ失敗</span><b id="sum-fmima">0回</b></div>
+<p class="note">この失敗回数は実戦記録として保存するよ。内部昇格率の設定差を正確に推測へ反映するには、各失敗後のランクを客観的に特定できる根拠が必要なため、現段階では設定割合に加点しないよ。</p>
+</div>
+</section>
+
+<section id="result" class="screen">
+<div class="card"><h2>実戦データ</h2><div class="statgrid">
+<div class="stat"><span>通常時ゲーム数</span><b id="rGames">0G</b></div>
+<div class="stat"><span>記録したST当選</span><b id="rST">0回</b></div>
+<div class="stat"><span>ボーナス初当り</span><b id="rBonus">---</b></div>
+<div class="stat"><span>CZ確率</span><b id="rCZ">---</b></div>
+</div></div>
+<div class="card"><h2>設定1〜6 推定割合</h2><div id="probabilities"><p class="hint">データを入力して推測を実行してね。</p></div>
+<p class="note">推定割合は、通常時確率・男女キャラ比など、公開されている設定別数値から簡易的に合算した参考値。CZ失敗回数やキャラ示唆は記録・参考表示とし、確認できない内部昇格結果を推定計算へ混ぜないよ。ボーナス・ST・CZは抽選経路が完全独立とは限らないため、統計的に厳密な公式値ではないよ。</p></div>
+<div class="card"><h2>エピソード紹介の示唆</h2><div id="episodeAnalysis" class="hint">---</div></div>
+<div class="card"><h2>実測値</h2><div id="actuals" class="hint">---</div></div>
+<div class="card"><h2>判別上の注意</h2><p class="note">第7話が1回以上あれば設定1〜3を除外する。8〜12話は話数が大きいほど高設定期待度アップという定性的な情報のみで、話数別の設定別選択率は未確認。そのため推定割合の数値には反映せず、別枠で傾向を表示するよ。</p></div>
+</section>
+
+<section id="history" class="screen">
+<div class="card"><h2>実戦履歴</h2><div id="historyList" class="hint">保存した実戦データはありません。</div></div>
+<button class="primary" onclick="saveSession()">この実戦を保存</button>
+<div class="row" style="margin-top:10px"><button class="secondary" onclick="exportData()">バックアップを書き出す</button><button class="secondary" onclick="$('importFile').click()">バックアップを読み込む</button><input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)"></div>
+<p class="note">データはこのブラウザ内に保存されます。SafariのWebサイトデータ消去などで消える可能性があるため、必要に応じてバックアップを書き出してね。</p>
+</section>
+
+<section id="reference" class="screen">
+<div class="card"><h2>設定差一覧</h2><table><thead><tr><th>設定</th><th>ボーナス</th><th>ST</th><th>CZ</th><th>共通ベル</th><th>男性紹介</th></tr></thead><tbody id="refRows"></tbody></table><p class="note">男性/女性紹介は奇数設定が60%/40%、偶数設定が40%/60%。</p></div>
+<div class="card"><h2>無名・生駒CZ失敗時の内部昇格抽選（参考資料）</h2><p class="note">以下は内部抽選の公表値。実戦中に昇格結果を直接確認できるという意味ではないため、アプリの設定割合には使用しないよ。</p><table><thead><tr><th>設定</th><th>非当選</th><th>1UP</th><th>3UP</th></tr></thead><tbody id="upgradeRows"></tbody></table><p class="note">数値はユーザー提供資料と公開解析が一致する値。非当選率は100%から1UP・3UPを引いて計算。</p></div>
+<div class="card"><h2>駿城ボーナス終了画面の選択率イメージ</h2>
+<p class="note">ユーザー提供資料の記号を転記。◎ ＞ ○ ＞ △ の順に出現しやすく、「－」は選択されないパターンとして示されている。</p>
+<table><thead><tr><th>終了画面</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead><tbody>
+<tr><td>侑那</td><td>◎</td><td>◎</td><td>○</td><td>◎</td><td>△</td><td>◎</td></tr>
+<tr><td>鰍</td><td>◎</td><td>◎</td><td>◎</td><td>○</td><td>◎</td><td>△</td></tr>
+<tr><td>無名</td><td>◎</td><td>－</td><td>△</td><td>△</td><td>◎</td><td>△</td></tr>
+<tr><td>菖蒲</td><td>－</td><td>○</td><td>○</td><td>○</td><td>○</td><td>◎</td></tr>
+<tr><td>生駒&amp;逞生</td><td>－</td><td>－</td><td>△</td><td>△</td><td>△</td><td>△</td></tr>
+<tr><td>無名&amp;美馬</td><td>－</td><td>－</td><td>－</td><td>－</td><td>△</td><td>△</td></tr>
+<tr><td>無名&amp;菖蒲</td><td>－</td><td>－</td><td>－</td><td>－</td><td>－</td><td>△</td></tr>
+</tbody></table>
+</div>
+<div class="card"><h2>BBランクの概要</h2><p class="note">BBランクは6段階。ランクが高いほどエピソードボーナス期待度が上がり、BBランク6はエピソードボーナス確定。初期ランクは設定変更時・ST終了時に抽選される。設定1の初期ランク振り分けは1:21.1%、2:13.6%、3:11.0%、4:52.3%、5:0.6%、6:1.3%。設定2〜6の完全な振り分けは公開確認できなかったため、推測計算には使用していない。</p></div>
+<div class="card"><h2>資料の参照先</h2>
+<p class="note">・なな徹「設定判別」：ボーナス/ST/CZ/共通ベル/キャラ紹介/エピソード紹介</p><p><a href="https://nana-press.com/kaiseki/machine/384/10347/" target="_blank" rel="noopener" style="color:var(--mint)">なな徹・設定判別ページを開く</a></p>
+<p class="note">・なな徹「BBランク詳細」：初期ランク、CZ失敗時の昇格抽選、BBランク示唆</p><p><a href="https://nana-press.com/kaiseki/machine/384/17754/" target="_blank" rel="noopener" style="color:var(--mint)">なな徹・BBランク詳細を開く</a></p>
+<p class="note">※ユーザー提供資料の美馬CZ失敗時の一部割合と、他の解析ページに掲載された数値には差異が見られるため、美馬CZの結果は設定確率計算に使用していないよ。</p>
+</div>
+</section>
+</main>
+<footer><button class="secondary" onclick="resetInputs()">入力リセット</button><button class="secondary" onclick="saveSession()">実戦を保存</button></footer>
+<script>
+const $=id=>document.getElementById(id);
+const settings=[
+{b:237.0,s:407.9,c:179.3,l:26.6,m:0.60},
+{b:230.7,s:393.2,c:177.9,l:26.6,m:0.40},
+{b:214.0,s:372.4,c:169.3,l:25.9,m:0.60},
+{b:186.5,s:327.2,c:158.4,l:25.4,m:0.40},
+{b:171.3,s:307.3,c:145.6,l:24.9,m:0.60},
+{b:151.3,s:290.6,c:136.8,l:24.2,m:0.40}
+];
+const upOne=[.200,.300,.300,.450,.454,.496],upThree=[.004,.004,.004,.004,.004,.004];
+let state={mode:'add',counts:{bonus:0,cz:0,bell:0,male:0,female:0},episodes:{low:0,7:0,8:0,9:0,10:0,11:0,12:0},sts:[],keyScreens:[],date:'',machineNo:'',games:0,coins:0,trophy:0};
+const epLabels=[['low','6以下'],['7','7話'],['8','8話'],['9','9話'],['10','10話'],['11','11話'],['12','12話']];
+function showTab(id){document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));}
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+function toggleMode(){state.mode=state.mode==='add'?'sub':'add';$('modeBtn').textContent=state.mode==='add'?'現在：＋1ずつ増やす':'現在：−1ずつ減らす';$('modeBtn').classList.toggle('minus',state.mode==='sub');}
+function changeCounter(key){state.counts[key]=Math.max(0,state.counts[key]+(state.mode==='add'?1:-1));render();}
+function changeEpisode(key){state.episodes[key]=Math.max(0,state.episodes[key]+(state.mode==='add'?1:-1));render();}
+function addST(){state.sts.push({rank:'',screen:'',fail:{nama:0,ikoma:0,mima:0},ni:{none:0,one:0,three:0},mima:{none:0,one:0,two:0,three:0,four:0,five:0}});render();}
+function addKeyScreen(){state.keyScreens=state.keyScreens||[];state.keyScreens.push({character:''});render();}
+function setKeyScreen(i,v){state.keyScreens[i].character=v;render();}
+function deleteKeyScreen(i){state.keyScreens.splice(i,1);render();}
+function changeFail(i,key){let st=state.sts[i];st.fail=st.fail||{nama:0,ikoma:0,mima:0};st.fail[key]=Math.max(0,(st.fail[key]||0)+(state.mode==='add'?1:-1));render();}
+function deleteST(i){if(!confirm('ST記録と、この区間に入力したCZ失敗記録を削除しますか？'))return;state.sts.splice(i,1);render();}
+function changeSTEvent(i,group,key){let x=state.sts[i][group];let old=x[key]||0;let delta=state.mode==='add'?1:-1;if(old+delta<0)return;x[key]=old+delta;render();}
+function setRank(i,r){state.sts[i].rank=r;render();}
+function setScreen(i,v){state.sts[i].screen=v;render();}
+function screenHint(v){return ({'侑那':'BBランク1〜6のいずれも出現例あり（侑那はデフォルト系）','鰍':'BBランク1〜6のいずれも出現例あり（鰍はデフォルト系）','無名':'BBランク2否定・BBランク5の期待大','菖蒲':'BBランク2以上濃厚','生駒&逞生':'BBランク3以上濃厚','無名&美馬':'BBランク5以上濃厚','無名&菖蒲':'BBランク6（MAX）濃厚'})[v]||'終了画面を選択すると、資料に基づくBBランク示唆を表示するよ。';}
+function render(){
+for(let k in state.counts)$('v-'+k).textContent=state.counts[k];
+state.keyScreens=state.keyScreens||[];
+$('keyScreenList').innerHTML=state.keyScreens.length?state.keyScreens.map((x,i)=>`<div class="field"><div class="row"><b>キリ番演出 #${i+1}</b><button class="secondary danger" onclick="deleteKeyScreen(${i})">削除</button></div><select style="width:100%;margin-top:7px" onchange="setKeyScreen(${i},this.value)">${['未選択','侑那','鰍','無名','菖蒲','生駒&逞生','無名&美馬','無名&菖蒲'].map(v=>`<option value="${v==='未選択'?'':v}" ${x.character===v?'selected':''}>${v}</option>`).join('')}</select><small>この欄はキャラクターの記録用。駿城ボーナス終了画面の示唆とは分けて管理するよ。</small></div>`).join(''):'<p class="hint">まだ記録がありません。「キリ番演出を追加」から記録してね。</p>';
+$('episodeKeys').innerHTML=epLabels.map(([k,label])=>`<button class="key ${k==='7'?'seven':''} ${k==='low'?'special':''}" onclick="changeEpisode('${k}')"><strong>${label}</strong><span>${state.episodes[k]||0}回</span></button>`).join('');
+$('stList').innerHTML=state.sts.length?state.sts.map((st,i)=>`
+<div class="st-card">
+<div class="row"><div class="st-title">ST当選 #${i+1}</div><button class="secondary danger" onclick="deleteST(${i})">削除</button></div>
+<div class="hint" style="margin-top:8px">このST区間で把握したBBランク（不明なら「不明」）</div>
+<div class="rank-grid">
+${[['?', '不明'],['1','1'],['2','2'],['3','3'],['4','4'],['5','5'],['6','6/MAX']].map(([r,l])=>`<button class="rank ${r==='?'?'unknown':''} ${st.rank===r?'selected':''}" onclick="setRank(${i},'${r}')">${l}</button>`).join('')}
+</div>
+<div class="field"><b>駿城ボーナス終了画面（BBランク示唆）</b>
+<select style="width:100%;margin-top:7px" onchange="setScreen(${i},this.value)">
+${['未確認','侑那','鰍','無名','菖蒲','生駒&逞生','無名&美馬','無名&菖蒲'].map(v=>`<option value="${v==='未確認'?'':v}" ${st.screen===v?'selected':''}>${v}</option>`).join('')}
+</select>
+<small>${screenHint(st.screen||'')}</small>
+</div>
+<div class="field"><b>このST区間のCZ失敗回数</b><small>内部昇格結果ではなく、実際に確認できる失敗回数を記録</small>
+<div class="event-grid">
+${[['nama','無名CZ'],['ikoma','生駒CZ'],['mima','美馬CZ']].map(([k,l])=>`<button class="event" onclick="changeFail(${i},'${k}')">${l}<b>${(st.fail||{})[k]||0}</b><small>失敗回数</small></button>`).join('')}
+</div></div>
+</div>`).join(''):'<p class="hint">まだST記録がありません。「＋ ST当選を追加」から記録してね。</p>';
+let fail={nama:0,ikoma:0,mima:0};state.sts.forEach(x=>Object.keys(fail).forEach(k=>fail[k]+=(x.fail||{})[k]||0));
+$('sum-fnama').textContent=fail.nama+'回';$('sum-fikoma').textContent=fail.ikoma+'回';$('sum-fmima').textContent=fail.mima+'回';
+$('date').value=state.date;$('machineNo').value=state.machineNo;$('games').value=state.games;$('coins').value=state.coins;$('trophy').value=state.trophy;
+saveDraft();
+}
+function logPoisson(n,rate){if(rate<=0)return -Infinity;let x=n*Math.log(rate)-rate;for(let i=2;i<=n;i++)x-=Math.log(i);return x;}
+function logBinomial(n1,n0,p){if(p<=0)return n1? -Infinity:0;if(p>=1)return n0? -Infinity:0;return n1*Math.log(p)+n0*Math.log(1-p);}
+function calculate(){
+state.date=$('date').value;state.machineNo=$('machineNo').value;state.games=Math.max(0,Number($('games').value)||0);state.coins=Number($('coins').value)||0;state.trophy=Number($('trophy').value)||0;
+let g=state.games,st=state.sts.length,c=state.counts,ep=state.episodes;
+$('rGames').textContent=g.toLocaleString()+'G';$('rST').textContent=st+'回';
+$('rBonus').textContent=g&&c.bonus?'1/'+(g/c.bonus).toFixed(1):'---';$('rCZ').textContent=g&&c.cz?'1/'+(g/c.cz).toFixed(1):'---';
+let fail={nama:0,ikoma:0,mima:0};state.sts.forEach(x=>Object.keys(fail).forEach(k=>fail[k]+=(x.fail||{})[k]||0));
+let ep7=ep['7']||0,logs=settings.map((s,i)=>{
+let l=0,has=false;
+if(g>0){[['bonus',c.bonus,s.b],[ 'st',st,s.s],['cz',c.cz,s.c],['bell',c.bell,s.l]].forEach(([k,n,den])=>{if(n>0){l+=logPoisson(n,g/den);has=true;}});}
+let men=c.male,fem=c.female;if(men+fem>0){l+=logBinomial(men,fem,s.m);has=true;}
+if(ep7>0&&i<3)return -Infinity;
+if(state.trophy>0&&i+1<state.trophy)return -Infinity;
+return has?l:0;
+});
+let max=Math.max(...logs.filter(Number.isFinite));
+if(!Number.isFinite(max)){max=0}
+let weights=logs.map(x=>Number.isFinite(x)?Math.exp(x-max):0),sum=weights.reduce((a,b)=>a+b,0);
+let probs=weights.map(x=>sum?100*x/sum:0);
+let active= g>0||c.male+c.female>0||ep7>0||state.trophy>0;
+$('probabilities').innerHTML=active?probs.map((v,i)=>`<div class="result"><div class="row"><b>設定${i+1}</b><b>${v.toFixed(1)}%</b></div><div class="bar"><i style="width:${v}%"></i></div></div>`).join(''):'<p class="hint">ゲーム数や回数、キャラ紹介などを入力してね。</p>';
+let epTotal=Object.values(ep).reduce((a,b)=>a+b,0),higher=ep['8']+ep['9']+ep['10']+ep['11']+ep['12'],avg=higher?((8*ep['8']+9*ep['9']+10*ep['10']+11*ep['11']+12*ep['12'])/higher).toFixed(1):'---';
+let epi=[];
+if(ep7)epi.push(`<b style="color:var(--gold)">第7話を${ep7}回確認：設定4以上濃厚。</b> 推定割合から設定1〜3を除外したよ。`);
+if(higher)epi.push(`8〜12話を合計${higher}回確認（平均${avg}話）。話数が大きいほど高設定期待度アップの示唆。`);
+if(ep.low)epi.push(`6話以下：${ep.low}回（特別な設定確定示唆としては扱わない）。`);
+if(!epTotal)epi.push('まだエピソード紹介の記録がありません。');
+epi.push('8〜12話の設定別選択率は未確認のため、割合への数値補正はしていません。');
+$('episodeAnalysis').innerHTML=epi.join('<br>');
+let actual=[];if(g){actual.push(`通常時 ${g.toLocaleString()}G`);if(c.bonus)actual.push(`ボーナス初当り 1/${(g/c.bonus).toFixed(1)}`);if(st)actual.push(`ST初当り 1/${(g/st).toFixed(1)}`);if(c.cz)actual.push(`CZ 1/${(g/c.cz).toFixed(1)}`);if(c.bell)actual.push(`共通6枚ベル 1/${(g/c.bell).toFixed(1)}`);}
+if(c.male+c.female)actual.push(`キャラ紹介 男性${c.male} / 女性${c.female}`);
+if(fail.nama+fail.ikoma+fail.mima)actual.push(`CZ失敗 無名${fail.nama} / 生駒${fail.ikoma} / 美馬${fail.mima}`);
+if(state.keyScreens?.length)actual.push(`100Gキリ番キャラ記録 ${state.keyScreens.length}件`);
+$('actuals').textContent=actual.length?actual.join(' ／ '):'---';
+saveDraft();
+}
+function saveDraft(){try{localStorage.setItem('kabaneriV2Draft',JSON.stringify(state));}catch(e){}}
+function loadDraft(){try{let x=JSON.parse(localStorage.getItem('kabaneriV2Draft')||'null');if(x){state={...state,...x};state.counts={...state.counts,...(x.counts||{})};state.episodes={...state.episodes,...(x.episodes||{})};state.keyScreens=Array.isArray(x.keyScreens)?x.keyScreens:[];state.sts=(state.sts||[]).map(st=>({...st,fail:st.fail||{nama:0,ikoma:0,mima:0}}));}}catch(e){}}
+function getRecord(){state.date=$('date').value;state.machineNo=$('machineNo').value;state.games=Math.max(0,Number($('games').value)||0);state.coins=Number($('coins').value)||0;state.trophy=Number($('trophy').value)||0;return JSON.parse(JSON.stringify(state));}
+function saveSession(){let rec=getRecord();if(!rec.games&&!rec.sts.length){alert('ゲーム数またはST記録を入力してね');return;}let a=JSON.parse(localStorage.getItem('kabaneriV2Sessions')||'[]');a.unshift({...rec,savedAt:new Date().toLocaleString('ja-JP')});localStorage.setItem('kabaneriV2Sessions',JSON.stringify(a));renderHistory();alert('この端末のブラウザに保存したよ');}
+function renderHistory(){let a=JSON.parse(localStorage.getItem('kabaneriV2Sessions')||'[]');$('historyList').innerHTML=a.length?a.map((x,i)=>`<div class="result"><b>${x.date||x.savedAt}</b>　${x.machineNo?'台 '+x.machineNo+'　':''}<br><span class="hint">${Number(x.games).toLocaleString()}G / ST${x.sts.length}回 / BB初当り${x.counts.bonus}回 / エピソード7話${x.episodes['7']||0}回</span><br><button class="secondary" onclick="loadSession(${i})">読み込む</button> <button class="secondary danger" onclick="deleteSession(${i})">削除</button></div>`).join(''):'保存した実戦データはありません。';}
+function loadSession(i){let a=JSON.parse(localStorage.getItem('kabaneriV2Sessions')||'[]');let x=a[i];if(!x)return;state={...state,...x};render();calculate();showTab('input');}
+function deleteSession(i){let a=JSON.parse(localStorage.getItem('kabaneriV2Sessions')||'[]');a.splice(i,1);localStorage.setItem('kabaneriV2Sessions',JSON.stringify(a));renderHistory();}
+function resetInputs(){if(!confirm('入力中のデータをリセットする？（保存済み実戦履歴は残るよ）'))return;state={mode:'add',counts:{bonus:0,cz:0,bell:0,male:0,female:0},episodes:{low:0,7:0,8:0,9:0,10:0,11:0,12:0},sts:[],keyScreens:[],date:new Date().toLocaleDateString('ja-JP'),machineNo:'',games:0,coins:0,trophy:0};render();calculate();}
+function exportData(){let data={draft:getRecord(),history:JSON.parse(localStorage.getItem('kabaneriV2Sessions')||'[]')};let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});let url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download='kabaneri-backup.json';a.click();URL.revokeObjectURL(url);}
+function importData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(x.draft)state=x.draft;if(x.history)localStorage.setItem('kabaneriV2Sessions',JSON.stringify(x.history));render();calculate();renderHistory();alert('バックアップを読み込んだよ');}catch(err){alert('ファイルを読み込めませんでした');}};r.readAsText(f);e.target.value='';}
+$('refRows').innerHTML=settings.map((s,i)=>`<tr><td>${i+1}</td><td>1/${s.b}</td><td>1/${s.s}</td><td>1/${s.c}</td><td>1/${s.l}</td><td>${(s.m*100).toFixed(0)}%</td></tr>`).join('');
+$('upgradeRows').innerHTML=settings.map((s,i)=>`<tr><td>${i+1}</td><td>${((1-upOne[i]-upThree[i])*100).toFixed(1)}%</td><td>${(upOne[i]*100).toFixed(1)}%</td><td>${(upThree[i]*100).toFixed(1)}%</td></tr>`).join('');
+['date','machineNo','games','coins','trophy'].forEach(id=>$(id).addEventListener('input',()=>{state[id]=id==='games'||id==='coins'?Number($(id).value)||0:$(id).value;saveDraft();}));
+loadDraft();if(!state.date)state.date=new Date().toLocaleDateString('ja-JP');render();calculate();renderHistory();
+</script>
+</body></html>
